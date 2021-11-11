@@ -1,19 +1,18 @@
-package com.example.RecipeProject.entity;
+package com.example.RecipeProject.model;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
-import org.springframework.data.annotation.Id;
-
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity(name="user")
 public class User {
 	@Id //id가 기본키
@@ -23,11 +22,12 @@ public class User {
 	private String username;
 	private String password;
 	private String email;
-	private String role;
+	private String roles;
 	
-	public User(Long Id, String username, String email) {
-		this.id = id;
-		this.username = username;
-		this.email = email;
+	public List<String> getRoleList(){
+		if(this.roles.length() >0) {
+			return Arrays.asList(this.roles.split(","));
+		}
+		return new ArrayList<>();
 	}
 }

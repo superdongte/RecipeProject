@@ -8,16 +8,25 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.example.RecipeProject.auth.PrincipalDetails;
+import com.example.RecipeProject.model.User;
 import com.example.RecipeProject.repository.UserRepository;
+
 
 
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter{
 
 	private UserRepository userRepository;
 	
-	public JwtAuthorizationFilter(AuthenticationManager authenticationManager,UserRepository userRepository) {
+	public JwtAuthorizationFilter(AuthenticationManager authenticationManager,
+			UserRepository userRepository) {
 		super(authenticationManager);
 		this.userRepository=userRepository;
 	}
@@ -25,21 +34,29 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter{
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 		throws IOException, ServletException{
-		
-		System.out.println("인증여부 상관없이 필터링");
-		
-		String jwtHeder = request.getHeader(JwtProps.HEADER);
-		System.out.println("jwtHeader" + jwtHeder);
+				
+		String header = request.getHeader(JwtProperties.HEADER_STRING);
 		
 		//헤더가 있는지 확인
-		if(jwtHeder == null || !jwtHeder.startsWith("Bearer")) {
+		if(header==null
+				||!header.startsWith(JwtProperties.TOKEN_PREFIX)) {
 			chain.doFilter(request, response);
 			return;
 		}
-		String username = null;
-		//토큰 검증
-		String jwtToken = request.getHeader(JwtProps.HEADER).replace(JwtProps.AUTH, "");
-		System.out.println("========================걸리는 부분");
+		System.out.println("header :" + header);
+		String token=request.getHeader(JwtProperties.HEADER_STRING)
+				.replace(JwtProperties.TOKEN_PREFIX,"");
 		
+		String username = JWT.require(Algorithm.HMAC512(JwtProperties.SECRET))
+				.build().verify(token).getClaim("username").asString();
+		if(username !=null) {
+			User user=userRepository.findByUsername(username);
+			PrincipalDetails principalDetails = new PrincipalDetails(user);
+			
+			Authentication authentication = new UsernamePasswordAuthenticationToken(
+					principalDetails,null,principalDetails.getAuthorities());
+			SecurityContextHolder.getContext().setAuthentication(authentication);
+		}
+		chain.doFilter(request, response);
 	}
 }
