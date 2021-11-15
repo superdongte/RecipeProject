@@ -1,6 +1,7 @@
 package com.example.RecipeProject.config.jwt;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Date;
 
 import javax.servlet.FilterChain;
@@ -31,24 +32,24 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 		throws AuthenticationException{
-		
-		LoginReqDto loginRequestDto = null;
+		LoginReqDto loginReqDto = null;
 		//1. 유저네임 패스워드를 받아서
 		//2. 정상인지 아닌지확인
 		System.out.println("jstathtcaiton: 진입");
 		try {
 			System.out.println("requestValue"+request.getInputStream());
-			ObjectMapper om = new ObjectMapper();
-			loginRequestDto = om.readValue(request.getInputStream(), LoginReqDto.class);
+			ObjectMapper om = new ObjectMapper(); //request에 있는 username과 패스워드를 피싱해서 자바object로 받기
+			loginReqDto = om.readValue(request.getInputStream(), LoginReqDto.class);
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.out.println("왜 안되는거지?");
 		}
-		System.out.println("JwtAuthenticationFilter" + loginRequestDto);
+		System.out.println("JwtAuthenticationFilter" + loginReqDto);
 		
 		UsernamePasswordAuthenticationToken authenticationToken=
 				new UsernamePasswordAuthenticationToken(
-						loginRequestDto.getUsername(), 
-						loginRequestDto.getPassword());
+						loginReqDto.getUsername(), 
+						loginReqDto.getPassword());
 		System.out.println("JwtAuthenticationFilter: 토근생성 완료");
 		
 		Authentication authentication =
@@ -71,7 +72,20 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 				.sign(Algorithm.HMAC512(JwtProperties.SECRET));
 		
 		response.addHeader(JwtProperties.HEADER_STRING, JwtProperties.TOKEN_PREFIX+jwtToken);
+		System.out.println("토근생성된건가"+JwtProperties.TOKEN_PREFIX+jwtToken);
 		
+//		json으로 보내기
+		ObjectMapper om = new ObjectMapper();
+		User userEntity = new User(principalDetails.getUser().getId(),principalDetails.getUser().getUsername(), principalDetails.getUser().getPassword(), 
+				 principalDetails.getUser().getEmail(),principalDetails.getUser().getRoles());
+		
+		LoginReqDto cmRestDto = new LoginReqDto(userEntity.getUsername(), userEntity.getPassword(), userEntity.getRoles(),"suceess","code");
+		String cmRestDtoJson = om.writeValueAsString(cmRestDto);
+		System.out.println("저게 왜저기"+cmRestDto);
+		PrintWriter out = response.getWriter();
+		out.print(cmRestDtoJson);
+		System.out.println(cmRestDtoJson);
+		out.flush();
 	} 
 	
 }

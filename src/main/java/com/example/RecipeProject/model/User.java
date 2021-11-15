@@ -10,10 +10,14 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Entity(name="user")
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
 	@Id //id가 기본키
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
